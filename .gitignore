@@ -1,2 +1,4 @@
 .idea*
 proba_v*
+*.json
+__*
