@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../speed-utils/')
 from submission import SubmissionWriter
 import json
 import os
