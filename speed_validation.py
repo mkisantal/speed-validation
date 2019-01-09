@@ -1,4 +1,4 @@
-
+import json
 
 # This return the score for the leaderboard
 # if there is an error an exception must be thrown here, but will not be visible to the user. Instead
@@ -20,5 +20,13 @@ def score_submission(submission):
 # if succesfull (no exception) score will be run later (by celery)
 # otherwise the text of the exception is shown on the web site (the user sees it) TEST IT PROPERLY
 def validate(file):
-    if file.size > 15 * (1 << 20):
-        raise ValueError('File size too big, maximum is 15 MB.')
+
+    # if file.size > 15 * (1 << 20):
+    #     raise ValueError('File size too big, maximum is 15 MB.')
+
+    try:
+        predictions = json.load(file)
+    except json.decoder.JSONDecodeError:
+        raise ValueError('The uploaded .json file is invalid.')
+
+    return

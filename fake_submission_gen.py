@@ -22,7 +22,7 @@ for image in test_set[::-1]:
 
     submission.append(filename, q, r)
 
-submission.export()
+submission.export(suffix='debug')
 print('Submission exported.')
 
 
