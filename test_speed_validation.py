@@ -1,5 +1,23 @@
 import speed_validation
 
+
+class UndetectedException(Exception):
+    pass
+
+
+def check_if_error_raised(testcase, expected_error):
+
+    """ Checking if test file raises the error that is expected. """
+
+    sub_file = open(testcase, 'r')
+    try:
+        speed_validation.validate(sub_file)
+        raise UndetectedException('No exception was raised for the test file: {}'.format(testcase))
+    except expected_error as e:
+        print('[{}] error successfully detected: {}'.format(testcase, e))
+
+    sub_file.close()
+
 # Todo: use django objects for passing the file
 # from django.db import models
 # from django.db.models.fields.files import FieldFile
@@ -9,11 +27,14 @@ import speed_validation
 # print(file.size)
 
 
-submission_file = open('submission_debug.json', 'r')
-# submission_file = open('not_a_real.json', 'r')
-res = speed_validation.validate(submission_file)
-print('validate:\n{}'.format(res))
-res = speed_validation.score(submission_file)
-print('score:\n{}'.format(res))
+print('\n\n' + '='*30 + '\nRunning tests with corrupted submission files:\n\n')
 
-submission_file.close()
+check_if_error_raised('test_cases/wrong_filename.json', ValueError)
+check_if_error_raised('test_cases/wrong_filename.json', ValueError)
+check_if_error_raised('test_cases/wrong_r.json', ValueError)
+check_if_error_raised('test_cases/wrong_q.json', ValueError)
+check_if_error_raised('test_cases/missing.json', ValueError)
+check_if_error_raised('test_cases/invalid.json', ValueError)
+# check_if_error_raised('submission_debug.json', ValueError)
+
+print('='*30 + '\nAll error raised as expected.')
