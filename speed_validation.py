@@ -13,14 +13,18 @@ submission_prediction_keys = {'filename', 'q', 'r'}
 # ENV DEPENDENT SETUP
 if environment == 'prod':
     # we are on Kelvins server
-    kelvins_root = '/home/kelvins/uploads/competitions/proba-v-super-resolution/'
+    kelvins_root = '/somewhere/on/electra/'
     with open(os.path.join(kelvins_root, 'speed_debug', 'test.json'), 'r') as f:
         test_image_list = json.load(f)
+    with open(os.path.join(kelvins_root, 'speed_labels', 'test_labels.json'), 'r') as f:
+        test_pose_labels = json.load(f)
 
 elif environment == 'dev':
     # local machine
     with open('/datasets/speed_debug/test.json', 'r') as f:
         test_image_list = json.load(f)
+    with open('/datasets/speed_debug_TEST_LABELS/test_labels.json', 'r') as f:
+        test_pose_labels = json.load(f)
 else:
     raise ValueError('\nUnexpected environment {}. '.format(environment) +
                      'Set environment in local_settings.py to \'prod\' or \'dev\'!')
@@ -28,25 +32,27 @@ else:
 
 test_image_names = set([x['filename'] for x in test_image_list])
 
-# This return the score for the leaderboard
-# if there is an error an exception must be thrown here, but will not be visible to the user. Instead
-# the submission will be marked invalid and a generic error communicated to the user via the web page.
-# May return a single score or a 2 element tuple. In
-# which case the first element is the score and the second the extra_info on the leaderboard
+
 def score(file):
+    predictions = json.load(file)
+
+    # sort, just in case
+    predictions.sort(key=lambda k: k['filename'])
+    test_pose_labels.sort(key=lambda k: k['filename'])
+
+    for predicted, ground_truth in zip(predictions, test_pose_labels):
+        if predicted['filename'] != ground_truth['filename']:
+            raise ValueError('Something got really messed up, inconsistent file names:' +
+                             '\'{}\' \'{}\''.format(predicted['filename'], ground_truth['filename']))
+
+        # call actual scoring function here
+
     return 0, 'extra_info'
 
-
-# The following function (if implemented) will be used instead of score. The difference is that it has access
-# to all previous submissions to and thus can score some submission with respect to the previous one.
-# This trick was used, for example, in the GTOC9 competition where the score depended on all valid submissions.
-def score_submission(submission):
-    return 0, 'extra_info'
+# def score_submission(submission):
+#     return 0, 'extra_info'
 
 
-# This runs immmediately after the upload and validates the easy bits (format size etc.)
-# if succesfull (no exception) score will be run later (by celery)
-# otherwise the text of the exception is shown on the web site (the user sees it) TEST IT PROPERLY
 def validate(file):
 
     if environment == 'prod':
@@ -61,7 +67,6 @@ def validate(file):
     checked_images = set()
     # check each submitted pose
     for i, prediction in enumerate(predictions):
-
 
         # check keys
         if set(prediction.keys()) != submission_prediction_keys:
@@ -82,9 +87,6 @@ def validate(file):
                              '\n[{}]'.format(prediction['q']))
 
         checked_images.add(prediction['filename'])
-
-    # from code import interact
-    # interact(local=locals())
 
     if checked_images != test_image_names:
         missing_image_names = list(test_image_names - checked_images)

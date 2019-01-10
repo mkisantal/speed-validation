@@ -28,13 +28,15 @@ def check_if_error_raised(testcase, expected_error):
 
 
 print('\n\n' + '='*30 + '\nRunning tests with corrupted submission files:\n\n')
-
 check_if_error_raised('test_cases/wrong_filename.json', ValueError)
 check_if_error_raised('test_cases/wrong_filename.json', ValueError)
 check_if_error_raised('test_cases/wrong_r.json', ValueError)
 check_if_error_raised('test_cases/wrong_q.json', ValueError)
 check_if_error_raised('test_cases/missing.json', ValueError)
 check_if_error_raised('test_cases/invalid.json', ValueError)
-# check_if_error_raised('submission_debug.json', ValueError)
+print('='*30 + '\nAll error raised as expected.\n\n')
 
-print('='*30 + '\nAll error raised as expected.')
+# run scoring script
+sub_file = open('submission_debug.json')
+score, info = speed_validation.score(sub_file)
+print('Ran scoring, score: {}, extra info: {}'.format(score, info))
