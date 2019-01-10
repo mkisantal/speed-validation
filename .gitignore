@@ -1,4 +1,5 @@
 .idea*
 proba_v*
-*.json
+submission*
 __*
+local_settings.py
