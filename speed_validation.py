@@ -13,10 +13,10 @@ submission_prediction_keys = {'filename', 'q', 'r'}
 # ENV DEPENDENT SETUP
 if environment == 'prod':
     # we are on Kelvins server
-    kelvins_root = '/somewhere/on/electra/'
-    with open(os.path.join(kelvins_root, 'speed_debug', 'test.json'), 'r') as f:
+    kelvins_root = '/srv/kelvins.esa.int/code-git/uploads/competitions/satellite-pose-estimation-challenge'
+    with open(os.path.join(kelvins_root, 'test.json'), 'r') as f:
         test_image_list = json.load(f)
-    with open(os.path.join(kelvins_root, 'speed_labels', 'test_labels.json'), 'r') as f:
+    with open(os.path.join(kelvins_root, 'test_labels.json'), 'r') as f:
         test_pose_labels = json.load(f)
 
 elif environment == 'dev':
