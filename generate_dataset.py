@@ -12,17 +12,20 @@ import speed_utils
 """
 
 speed = speed_utils.SatellitePoseEstimationDataset()
+tron = speed_utils.SatellitePoseEstimationDataset(root_dir='/datasets/tronRealImages', tron=True)
+
 
 source_root = speed.root_dir
-destination_root = '/datasets/speed_debug'
-test_labels_root = '/datasets/speed_debug_TEST_LABELS'
+destination_root = '/datasets/speed_debug2'
+test_labels_root = '/datasets/speed_debug2_TEST_LABELS'
+
 
 dst_images = os.path.join(destination_root, 'images')
 if not os.path.exists(dst_images):
     os.makedirs(dst_images)
 if not os.path.exists(test_labels_root):
     os.makedirs(test_labels_root)
-for partition in ['train', 'test']:
+for partition in ['train', 'test', 'tron']:
     if not os.path.exists(os.path.join(dst_images, partition)):
         os.makedirs(os.path.join(dst_images, partition))
 
@@ -35,6 +38,11 @@ for partition in ['train', 'test']:
         src = os.path.join(source_root, 'images', image_id + '.jpg')
         dst = os.path.join(destination_root, 'images', partition, image_id + '.jpg')
         copyfile(src, dst)
+
+for image_id in tron.partitions['tron']:
+    src = os.path.join(tron.root_dir, 'images', image_id[:-4] + '.jpg')
+    dst = os.path.join(destination_root, 'images', 'tron', image_id  + '.jpg')
+    copyfile(src, dst)
 
 # saving json
 for partition in ['train', 'test']:
@@ -60,6 +68,25 @@ for partition in ['train', 'test']:
             json.dump(images, f)
         with open(os.path.join(test_labels_root, 'test_labels.json'), 'w') as f:
             json.dump(images_with_labels, f)
+
+# saving json for tron
+images = []
+images_with_labels = []
+for image_id in tron.partitions['tron'][:20]:
+    image_dict = dict()
+    image_with_label = dict()
+    image_dict['filename'] = '{}.jpg'.format(image_id)
+    image_with_label['filename'] = '{}.jpg'.format(image_id)
+    images.append(image_dict)
+
+    image_with_label['q_vbs2tango'] = list(tron.labels[image_id]['q'])
+    image_with_label['r_Vo2To_vbs_true'] = list(tron.labels[image_id]['r'])
+    images_with_labels.append(image_with_label)
+
+with open(os.path.join(destination_root, '{}.json'.format('tron')), 'w') as f:
+    json.dump(images, f)
+with open(os.path.join(test_labels_root, 'tron_labels.json'), 'w') as f:
+    json.dump(images_with_labels, f)
 
 print('Dataset created at {}'.format(destination_root))
 print('Ground truth for test set was saved separately at {}.'.format(test_labels_root))

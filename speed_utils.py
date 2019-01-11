@@ -69,6 +69,26 @@ def process_xml_dataset(root_dir='/datasets/speed_v1/data/speed/'):
     return partition, labels
 
 
+def process_xml_tron_dataset(tron_root='/datasets/tronRealImages'):
+
+    """ Parsing xml dataset for tron images. """
+
+    labels = {}
+    partition = {}
+
+    subset = 'tron'
+    partition[subset] = []
+
+    xml_set = xmlread(os.path.join(tron_root, 'tronRealImages.xml'))
+    for image in xml_set.findall('image'):
+        q_vbs2tango_true, r_Vo2To_vbs_true = parse_pose(image)
+        id = parse_file_name(image)[:-4] + 'tron'
+        partition[subset].append(id)
+        labels[id] = {'q': q_vbs2tango_true, 'r': r_Vo2To_vbs_true}
+
+    return partition, labels
+
+
 class SatellitePoseEstimationDataset:
 
     """
@@ -76,8 +96,11 @@ class SatellitePoseEstimationDataset:
         Parses original speed_v1 .xml files, with pose label for both train and test sets.
     """
 
-    def __init__(self, root_dir='/datasets/speed_v1/data/speed/'):
-        self.partitions, self.labels = process_xml_dataset(root_dir)
+    def __init__(self, root_dir='/datasets/speed_v1/data/speed/', tron=False):
+        if tron:
+            self.partitions, self.labels = process_xml_tron_dataset(root_dir)
+        else:
+            self.partitions, self.labels = process_xml_dataset(root_dir)
         self.root_dir = root_dir
 
     def get_image(self, i=0, split='train'):
