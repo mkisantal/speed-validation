@@ -3,3 +3,4 @@ proba_v*
 submission*
 __*
 local_settings.py
+*.log

@@ -9,6 +9,7 @@ import os
 
 # SETTINGS
 submission_prediction_keys = {'filename', 'q', 'r'}
+max_filesize = 2  # MB
 
 # ENV DEPENDENT SETUP
 if environment == 'prod':
@@ -18,6 +19,7 @@ if environment == 'prod':
         test_image_list = json.load(f)
     with open(os.path.join(kelvins_root, 'test_labels.json'), 'r') as f:
         test_pose_labels = json.load(f)
+    root = kelvins_root
 
 elif environment == 'dev':
     # local machine
@@ -25,6 +27,7 @@ elif environment == 'dev':
         test_image_list = json.load(f)
     with open('/datasets/speed_debug_TEST_LABELS/test_labels.json', 'r') as f:
         test_pose_labels = json.load(f)
+    root = ''
 else:
     raise ValueError('\nUnexpected environment {}. '.format(environment) +
                      'Set environment in local_settings.py to \'prod\' or \'dev\'!')
@@ -34,6 +37,19 @@ test_image_names = set([x['filename'] for x in test_image_list])
 
 
 def score(file):
+
+    """ Call scoring function, log exceptions, re-raise error. """
+
+    try:
+        scr, inf = _score(file)
+        return scr, inf
+    except Exception as e:
+        with open(os.path.join(root, 'score_error_log.log'), 'a+') as log_file:
+            print(str(e), file=log_file)
+        raise e
+
+
+def _score(file):
     predictions = json.load(file)
 
     # sort, just in case
@@ -56,8 +72,8 @@ def score(file):
 def validate(file):
 
     if environment == 'prod':
-        if file.size > 15 * (1 << 20):
-            raise ValueError('File size too big, maximum is 15 MB.')
+        if file.size > max_filesize * (1 << 20):
+            raise ValueError('File size too big, maximum is {} MB.'.format(max_filesize))
 
     try:
         predictions = json.load(file)
