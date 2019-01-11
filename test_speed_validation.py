@@ -14,7 +14,7 @@ def check_if_error_raised(testcase, expected_error):
         speed_validation.validate(sub_file)
         raise UndetectedException('No exception was raised for the test file: {}'.format(testcase))
     except expected_error as e:
-        print('[{}] error successfully detected: {}'.format(testcase, e))
+        print('[{}] error successfully detected:\n\t{}'.format(testcase, e))
 
     sub_file.close()
 
@@ -28,6 +28,8 @@ def check_if_error_raised(testcase, expected_error):
 
 
 print('\n\n' + '='*30 + '\nRunning tests with corrupted submission files:\n\n')
+check_if_error_raised('test_cases/missing_partition_key.json', ValueError)
+check_if_error_raised('test_cases/only_test_image_list.json', AttributeError)
 check_if_error_raised('test_cases/wrong_filename.json', ValueError)
 check_if_error_raised('test_cases/wrong_filename.json', ValueError)
 check_if_error_raised('test_cases/wrong_r.json', ValueError)

@@ -16,8 +16,8 @@ tron = speed_utils.SatellitePoseEstimationDataset(root_dir='/datasets/tronRealIm
 
 
 source_root = speed.root_dir
-destination_root = '/datasets/speed_debug2'
-test_labels_root = '/datasets/speed_debug2_TEST_LABELS'
+destination_root = '/datasets/speed_debug'
+test_labels_root = '/datasets/speed_debug_TEST_LABELS'
 
 
 dst_images = os.path.join(destination_root, 'images')
