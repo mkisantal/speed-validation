@@ -27,18 +27,14 @@ def check_if_error_raised(testcase, expected_error):
 # print(file.size)
 
 
-print('\n\n' + '='*30 + '\nRunning tests with corrupted submission files:\n\n')
-check_if_error_raised('test_cases/missing_partition_key.json', ValueError)
-check_if_error_raised('test_cases/only_test_image_list.json', AttributeError)
-check_if_error_raised('test_cases/wrong_filename.json', ValueError)
-check_if_error_raised('test_cases/wrong_filename.json', ValueError)
-check_if_error_raised('test_cases/wrong_r.json', ValueError)
-check_if_error_raised('test_cases/wrong_q.json', ValueError)
-check_if_error_raised('test_cases/missing.json', ValueError)
-check_if_error_raised('test_cases/invalid.json', ValueError)
-print('='*30 + '\nAll error raised as expected.\n\n')
+check_if_error_raised('test_cases/invalid.csv', ValueError)
+check_if_error_raised('test_cases/wrong_field_type.csv', TypeError)
+check_if_error_raised('test_cases/invalid_filename.csv', ValueError)
+check_if_error_raised('test_cases/extra_image.csv', ValueError)
+check_if_error_raised('test_cases/missing_images.csv', ValueError)
+print('done.')
 
-# run scoring script
-sub_file = open('submission_debug.json')
-score, info = speed_validation.score(sub_file)
-print('Ran scoring, score: {}, extra info: {}'.format(score, info))
+# run scoring script TODO
+# sub_file = open('submission_debug.json')
+# score, info = speed_validation.score(sub_file)
+# print('Ran scoring, score: {}, extra info: {}'.format(score, info))

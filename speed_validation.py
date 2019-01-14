@@ -7,6 +7,7 @@ import json
 import os
 import numpy as np
 from math import pi
+import csv
 
 
 # SETTINGS
@@ -62,6 +63,8 @@ def score(file):
 
 
 def _score(file):
+
+    # TODO: load csv here!
     predictions = json.load(file)
 
     test_estimates = predictions['test']
@@ -87,52 +90,52 @@ def _score(file):
     return test_score, str(tron_score)
 
 
+def validate_csv_row(row, idx):
+
+    """ Validate row in .csv submission file. """
+
+    if len(row) != 8:
+        raise ValueError('[row {}] Row in csv file should contain 8 fields (str filename, 4 floats '.format(idx) +
+                         'for orientation quaternion, 3 floats for translation vector), but the following ' +
+                         'line contains only {} field(s): [{}]'.format(len(row), str(*row)))
+
+    # validating fields
+    if not row[0].startswith('img'):
+        raise ValueError('[row {}] Expected image file name starting with \'img\', got: {}'.format(idx, row[0]))
+    for i in range(1, 8):
+        try:
+            float(row[i])
+        except ValueError:
+            raise TypeError('[row {}] The following string cannot be converted to float: {}'.format(idx, row[i]))
+
+
 def validate(file):
+
+    """ Validate .csv submission file. """
 
     if environment == 'prod':
         if file.size > max_filesize * (1 << 20):
             raise ValueError('File size too big, maximum is {} MB.'.format(max_filesize))
 
-    try:
-        predictions = json.load(file)
-    except json.decoder.JSONDecodeError:
-        raise ValueError('Json decoding error. The uploaded .json file is invalid.')
+    test_predictions = []
+    tron_predictions = []
 
-    # check if both test and tron estimates are in submission file.
-    try:
-        if set(predictions.keys()) != submission_partition_keys:
-            raise ValueError('Pose estimates required for both test and tron images.\n' +
-                             'Expected keys {} in submission file, '.format(submission_partition_keys) +
-                             'but only key(s) {} was found. '.format(predictions.keys()))
-    except AttributeError:
-        raise AttributeError('Submission file should contain dict with keys {}.'.format(submission_partition_keys) +
-                             ' Parsed file contained {} instead.'.format(type(predictions)))
-
-    test_poses = predictions['test']
-    tron_poses = predictions['tron']
+    csv_reader = csv.reader(file, delimiter=',')
+    for idx, row in enumerate(csv_reader):
+        validate_csv_row(row, idx)
+        filename = row[0]
+        q = [float(row[x]) for x in [1, 2, 3, 4]]
+        r = [float(row[x]) for x in [5, 6, 7]]
+        list_to_append = tron_predictions if filename.endswith('tron.jpg') else test_predictions
+        list_to_append.append({'filename': filename, 'q': q, 'r': r})
 
     checked_images = set()
-    # check each submitted pose
-    for poses in [test_poses, tron_poses]:
-        for i, prediction in enumerate(poses):
+    for predictions in [test_predictions, tron_predictions]:
+        for i, prediction in enumerate(predictions):
 
-            # check keys
-            if set(prediction.keys()) != submission_prediction_keys:
-                raise ValueError('Expected keys {} in submission file, instead got keys:'.format(submission_prediction_keys,
-                                                                                                 prediction.keys))
             # check filename
             if prediction['filename'] not in test_and_tron_image_names:
-                raise ValueError('Image filename \'{}\' not in test image names.'.format(prediction['filename']))
-
-            # check pose variable sizes
-            if len(prediction['q']) != 4:
-                raise ValueError('Expected list with 4 variables for quaternion,' +
-                                 ' got {} instead:'.format(len(prediction['q'])) +
-                                 '\n[{}]'.format(prediction['q']))
-            if len(prediction['r']) != 3:
-                raise ValueError('Expected list with 3 variables for translation vector,' +
-                                 ' got {} instead:'.format(len(prediction['q'])) +
-                                 '\n[{}]'.format(prediction['q']))
+                raise ValueError('Image filename \'{}\' not in expected filenames.'.format(prediction['filename']))
 
             checked_images.add(prediction['filename'])
 
@@ -140,6 +143,8 @@ def validate(file):
         missing_image_names = list(test_and_tron_image_names - checked_images)
         missing_image_names.sort()
         raise ValueError('The pose for the following images is missing: {}.'.format(missing_image_names))
+
+    return
 
 
 # SCORING UTILS
