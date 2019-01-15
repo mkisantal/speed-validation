@@ -14,6 +14,7 @@ import csv
 submission_partition_keys = {'test', 'tron'}
 submission_prediction_keys = {'filename', 'q', 'r'}
 max_filesize = 2  # MB
+partial_evaluation = True
 
 # ENV DEPENDENT SETUP
 if environment == 'prod':
@@ -27,6 +28,8 @@ if environment == 'prod':
         test_labels = json.load(f)
     with open(os.path.join(kelvins_root, 'tron_labels.json'), 'r') as f:
         tron_labels = json.load(f)
+    with open(os.path.join(kelvins_root, 'partial_evaluation_indices.json'), 'r') as f:
+        partial_evaluation_indices = json.load(f)
     root = kelvins_root
 
 elif environment == 'dev':
@@ -39,6 +42,8 @@ elif environment == 'dev':
         test_labels = json.load(f)
     with open('/datasets/speed_debug_TEST_LABELS/tron_labels.json', 'r') as f:
         tron_labels = json.load(f)
+    with open('/datasets/speed_debug_TEST_LABELS/partial_evaluation_indices.json', 'r') as f:
+        partial_evaluation_indices = json.load(f)
     root = ''
 else:
     raise ValueError('\nUnexpected environment {}. '.format(environment) +
@@ -54,7 +59,7 @@ def score(file):
     """ Call scoring function, log exceptions, re-raise error. """
 
     try:
-        scr, inf = _score(file)
+        scr, inf = _score(file, partial_evaluation)
         return scr, inf
     except Exception as e:
         with open(os.path.join(root, 'score_error_log.log'), 'a+') as log_file:
@@ -62,9 +67,9 @@ def score(file):
         raise e
 
 
-def _score(file):
+def _score(file, partial_eval):
 
-    """ Scoring: pairing ground truth with estimates, calling the numerical calculations. """
+    """ Scoring: pairing ground truth with estimates, optionally partial evaluation """
 
     test_predictions = []
     tron_predictions = []
@@ -81,12 +86,25 @@ def _score(file):
     for estimate_list in [test_predictions, tron_predictions, test_labels, tron_labels]:
         estimate_list.sort(key=lambda k: k['filename'])
 
-    test_predictions_pose = [x['pose'] for x in test_predictions]
-    test_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in test_labels]
-    test_score = compute(test_predictions_pose, test_labels_pose)
+    # partial evaluation on subset of images
+    if partial_eval:
+        partial_test_labels = [test_labels[x] for x in partial_evaluation_indices['test']]
+        partial_tron_labels = [tron_labels[x] for x in partial_evaluation_indices['tron']]
+        partial_test_predictions = [test_predictions[x] for x in partial_evaluation_indices['test']]
+        partial_tron_predictions = [tron_predictions[x] for x in partial_evaluation_indices['tron']]
+    else:
+        partial_test_labels = test_labels
+        partial_tron_labels = tron_labels
+        partial_test_predictions = test_predictions
+        partial_tron_predictions = tron_predictions
 
-    tron_predictions_pose = [x['pose'] for x in test_predictions]
-    tron_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in tron_labels]
+    test_predictions_pose = [x['pose'] for x in partial_test_predictions]
+    tron_predictions_pose = [x['pose'] for x in partial_tron_predictions]
+
+    test_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in partial_test_labels]
+    tron_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in partial_tron_labels]
+
+    test_score = compute(test_predictions_pose, test_labels_pose)
     tron_score = compute(tron_predictions_pose, tron_labels_pose)
 
     return test_score, str(tron_score)
