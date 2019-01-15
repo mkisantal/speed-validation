@@ -10,8 +10,6 @@ from math import pi
 
 
 # SETTINGS
-submission_partition_keys = {'test', 'tron'}
-submission_prediction_keys = {'filename', 'q', 'r'}
 max_filesize = 2  # MB
 partial_evaluation = True
 
@@ -282,10 +280,10 @@ def compute(prediction, label):
     # distance error norm, normalized with target distance
     target_distances = np.linalg.norm(label_r, axis=1)
     translation_error = label_r - pred_r
-    trans_error_2_norm = np.linalg.norm(translation_error)
+    trans_error_2_norm = np.linalg.norm(translation_error, axis=1)
     translation_error_dist_normalized = trans_error_2_norm / target_distances
 
-    # final score: adding error norm, calulating mean
+    # final score: adding error norm, calculating mean
     scores = euler_error_2_norm + translation_error_dist_normalized
 
     return scores.mean()

@@ -38,5 +38,6 @@ print('done.')
 # run scoring script
 sub_file = open('submission_debug.csv', 'rb')
 speed_validation.validate(sub_file)
+sub_file.seek(0)
 score, info = speed_validation.score(sub_file)
 print('Ran scoring, score: {}, extra info: {}'.format(score, info))
