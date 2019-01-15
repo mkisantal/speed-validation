@@ -7,7 +7,6 @@ import json
 import os
 import numpy as np
 from math import pi
-import csv
 
 
 # SETTINGS
@@ -53,6 +52,14 @@ test_and_tron_image_list = test_image_list + tron_image_list
 test_and_tron_image_names = set([x['filename'] for x in test_and_tron_image_list])
 
 
+def read_csv(file):
+
+    """ Simple csv reading, since csv module fails with the files that django opens in 'rb' mode. """
+
+    lines = file.readlines()
+    return [[x for x in line.decode('utf-8').split(',')] for line in lines]
+
+
 # SCORING AND VALIDATION
 def score(file):
 
@@ -74,8 +81,8 @@ def _score(file, partial_eval):
     test_predictions = []
     tron_predictions = []
 
-    csv_reader = csv.reader(file, delimiter=',')
-    for idx, row in enumerate(csv_reader):
+    csv_rows = read_csv(file)
+    for idx, row in enumerate(csv_rows):
         validate_csv_row(row, idx)
         filename = row[0]
         pose = [float(row[x]) for x in range(1, 8)]
@@ -117,7 +124,7 @@ def validate_csv_row(row, idx):
     if len(row) != 8:
         raise ValueError('[row {}] Row in csv file should contain 8 fields (str filename, 4 floats '.format(idx) +
                          'for orientation quaternion, 3 floats for translation vector), but the following ' +
-                         'line contains only {} field(s): [{}]'.format(len(row), str(*row)))
+                         'line contains {} field(s): [{}]'.format(len(row), row))
 
     # validating fields
     if not row[0].startswith('img'):
@@ -140,8 +147,8 @@ def validate(file):
     test_predictions = []
     tron_predictions = []
 
-    csv_reader = csv.reader(file, delimiter=',')
-    for idx, row in enumerate(csv_reader):
+    csv_rows = read_csv(file)
+    for idx, row in enumerate(csv_rows):
         validate_csv_row(row, idx)
         filename = row[0]
         q = [float(row[x]) for x in [1, 2, 3, 4]]
