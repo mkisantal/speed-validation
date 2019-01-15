@@ -64,28 +64,30 @@ def score(file):
 
 def _score(file):
 
-    # TODO: load csv here!
-    predictions = json.load(file)
+    """ Scoring: pairing ground truth with estimates, calling the numerical calculations. """
 
-    test_estimates = predictions['test']
-    tron_estimates = predictions['tron']
+    test_predictions = []
+    tron_predictions = []
 
-    # sort everything, just in case
-    for estimate_list in [test_estimates, tron_estimates, test_labels, tron_labels]:
+    csv_reader = csv.reader(file, delimiter=',')
+    for idx, row in enumerate(csv_reader):
+        validate_csv_row(row, idx)
+        filename = row[0]
+        pose = [float(row[x]) for x in range(1, 8)]
+        list_to_append = tron_predictions if filename.endswith('tron.jpg') else test_predictions
+        list_to_append.append({'filename': filename, 'pose': pose})
+
+    # sort by filenames
+    for estimate_list in [test_predictions, tron_predictions, test_labels, tron_labels]:
         estimate_list.sort(key=lambda k: k['filename'])
 
-    test_estimates_pose = [x['q'] + x['r'] for x in test_estimates]
+    test_predictions_pose = [x['pose'] for x in test_predictions]
     test_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in test_labels]
-    test_score = compute(test_estimates_pose, test_labels_pose)
+    test_score = compute(test_predictions_pose, test_labels_pose)
 
-    tron_estimates_pose = [x['q'] + x['r'] for x in tron_estimates]
+    tron_predictions_pose = [x['pose'] for x in test_predictions]
     tron_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in tron_labels]
-    tron_score = compute(tron_estimates_pose, tron_labels_pose)
-
-    # for estimate, ground_truth in zip(test_estimates, test_pose_labels):
-    #     if estimate['filename'] != ground_truth['filename']:
-    #         raise ValueError('Something got really messed up, inconsistent file names:' +
-    #                          '\'{}\' \'{}\''.format(estimate['filename'], ground_truth['filename']))
+    tron_score = compute(tron_predictions_pose, tron_labels_pose)
 
     return test_score, str(tron_score)
 

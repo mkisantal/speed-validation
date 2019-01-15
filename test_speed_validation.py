@@ -34,7 +34,7 @@ check_if_error_raised('test_cases/extra_image.csv', ValueError)
 check_if_error_raised('test_cases/missing_images.csv', ValueError)
 print('done.')
 
-# run scoring script TODO
-# sub_file = open('submission_debug.json')
-# score, info = speed_validation.score(sub_file)
-# print('Ran scoring, score: {}, extra info: {}'.format(score, info))
+# run scoring script
+sub_file = open('submission_debug.csv')
+score, info = speed_validation.score(sub_file)
+print('Ran scoring, score: {}, extra info: {}'.format(score, info))
