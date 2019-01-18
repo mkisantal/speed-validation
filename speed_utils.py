@@ -76,13 +76,13 @@ def process_xml_tron_dataset(tron_root='/datasets/tronRealImages'):
     labels = {}
     partition = {}
 
-    subset = 'tron'
+    subset = 'test'
     partition[subset] = []
 
     xml_set = xmlread(os.path.join(tron_root, 'tronRealImages.xml'))
     for image in xml_set.findall('image'):
         q_vbs2tango_true, r_Vo2To_vbs_true = parse_pose(image)
-        id = parse_file_name(image)[:-4] + 'tron'
+        id = parse_file_name(image)[:-4] + 'real'
         partition[subset].append(id)
         labels[id] = {'q': q_vbs2tango_true, 'r': r_Vo2To_vbs_true}
 

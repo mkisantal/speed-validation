@@ -19,12 +19,12 @@ if environment == 'prod':
     kelvins_root = '/srv/kelvins.esa.int/code-git/uploads/competitions/satellite-pose-estimation-challenge'
     with open(os.path.join(kelvins_root, 'test.json'), 'r') as f:
         test_image_list = json.load(f)
-    with open(os.path.join(kelvins_root, 'tron.json'), 'r') as f:
-        tron_image_list = json.load(f)
+    with open(os.path.join(kelvins_root, 'real_test.json'), 'r') as f:
+        real_test_image_list = json.load(f)
     with open(os.path.join(kelvins_root, 'test_labels.json'), 'r') as f:
         test_labels = json.load(f)
-    with open(os.path.join(kelvins_root, 'tron_labels.json'), 'r') as f:
-        tron_labels = json.load(f)
+    with open(os.path.join(kelvins_root, 'real_test_labels.json'), 'r') as f:
+        real_test_labels = json.load(f)
     with open(os.path.join(kelvins_root, 'partial_evaluation_indices.json'), 'r') as f:
         partial_evaluation_indices = json.load(f)
     root = kelvins_root
@@ -33,12 +33,12 @@ elif environment == 'dev':
     # local machine
     with open('/datasets/speed_debug/test.json', 'r') as f:
         test_image_list = json.load(f)
-    with open('/datasets/speed_debug/tron.json', 'r') as f:
-        tron_image_list = json.load(f)
+    with open('/datasets/speed_debug/real_test.json', 'r') as f:
+        real_test_image_list = json.load(f)
     with open('/datasets/speed_debug_TEST_LABELS/test_labels.json', 'r') as f:
         test_labels = json.load(f)
-    with open('/datasets/speed_debug_TEST_LABELS/tron_labels.json', 'r') as f:
-        tron_labels = json.load(f)
+    with open('/datasets/speed_debug_TEST_LABELS/real_test_labels.json', 'r') as f:
+        real_test_labels = json.load(f)
     with open('/datasets/speed_debug_TEST_LABELS/partial_evaluation_indices.json', 'r') as f:
         partial_evaluation_indices = json.load(f)
     root = ''
@@ -46,8 +46,8 @@ else:
     raise ValueError('\nUnexpected environment {}. '.format(environment) +
                      'Set environment in local_settings.py to \'prod\' or \'dev\'!')
 
-test_and_tron_image_list = test_image_list + tron_image_list
-test_and_tron_image_names = set([x['filename'] for x in test_and_tron_image_list])
+test_and_real_image_list = test_image_list + real_test_image_list
+test_and_real_image_names = set([x['filename'] for x in test_and_real_image_list])
 
 
 def read_csv(file):
@@ -77,42 +77,42 @@ def _score(file, partial_eval):
     """ Scoring: pairing ground truth with estimates, optionally partial evaluation """
 
     test_predictions = []
-    tron_predictions = []
+    real_test_predictions = []
 
     csv_rows = read_csv(file)
     for idx, row in enumerate(csv_rows):
         validate_csv_row(row, idx)
         filename = row[0]
         pose = [float(row[x]) for x in range(1, 8)]
-        list_to_append = tron_predictions if filename.endswith('tron.jpg') else test_predictions
+        list_to_append = real_test_predictions if filename.endswith('real.jpg') else test_predictions
         list_to_append.append({'filename': filename, 'pose': pose})
 
     # sort by filenames
-    for estimate_list in [test_predictions, tron_predictions, test_labels, tron_labels]:
+    for estimate_list in [test_predictions, real_test_predictions, test_labels, real_test_labels]:
         estimate_list.sort(key=lambda k: k['filename'])
 
     # partial evaluation on subset of images
     if partial_eval:
         partial_test_labels = [test_labels[x] for x in partial_evaluation_indices['test']]
-        partial_tron_labels = [tron_labels[x] for x in partial_evaluation_indices['tron']]
+        partial_real_labels = [real_test_labels[x] for x in partial_evaluation_indices['real_test']]
         partial_test_predictions = [test_predictions[x] for x in partial_evaluation_indices['test']]
-        partial_tron_predictions = [tron_predictions[x] for x in partial_evaluation_indices['tron']]
+        partial_real_predictions = [real_test_predictions[x] for x in partial_evaluation_indices['real_test']]
     else:
         partial_test_labels = test_labels
-        partial_tron_labels = tron_labels
+        partial_real_labels = real_test_labels
         partial_test_predictions = test_predictions
-        partial_tron_predictions = tron_predictions
+        partial_real_predictions = real_test_predictions
 
     test_predictions_pose = [x['pose'] for x in partial_test_predictions]
-    tron_predictions_pose = [x['pose'] for x in partial_tron_predictions]
+    real_test_predictions_pose = [x['pose'] for x in partial_real_predictions]
 
     test_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in partial_test_labels]
-    tron_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in partial_tron_labels]
+    real_test_labels_pose = [x['q_vbs2tango'] + x['r_Vo2To_vbs_true'] for x in partial_real_labels]
 
     test_score = compute(test_predictions_pose, test_labels_pose)
-    tron_score = compute(tron_predictions_pose, tron_labels_pose)
+    real_test_score = compute(real_test_predictions_pose, real_test_labels_pose)
 
-    return test_score, str(tron_score)
+    return test_score, str(real_test_score)
 
 
 def validate_csv_row(row, idx):
@@ -143,7 +143,7 @@ def validate(file):
             raise ValueError('File size too big, maximum is {} MB.'.format(max_filesize))
 
     test_predictions = []
-    tron_predictions = []
+    real_test_predictions = []
 
     csv_rows = read_csv(file)
     for idx, row in enumerate(csv_rows):
@@ -151,21 +151,21 @@ def validate(file):
         filename = row[0]
         q = [float(row[x]) for x in [1, 2, 3, 4]]
         r = [float(row[x]) for x in [5, 6, 7]]
-        list_to_append = tron_predictions if filename.endswith('tron.jpg') else test_predictions
+        list_to_append = real_test_predictions if filename.endswith('real.jpg') else test_predictions
         list_to_append.append({'filename': filename, 'q': q, 'r': r})
 
     checked_images = set()
-    for predictions in [test_predictions, tron_predictions]:
+    for predictions in [test_predictions, real_test_predictions]:
         for i, prediction in enumerate(predictions):
 
             # check filename
-            if prediction['filename'] not in test_and_tron_image_names:
+            if prediction['filename'] not in test_and_real_image_names:
                 raise ValueError('Image filename \'{}\' not in expected filenames.'.format(prediction['filename']))
 
             checked_images.add(prediction['filename'])
 
-    if checked_images != test_and_tron_image_names:
-        missing_image_names = list(test_and_tron_image_names - checked_images)
+    if checked_images != test_and_real_image_names:
+        missing_image_names = list(test_and_real_image_names - checked_images)
         missing_image_names.sort()
         raise ValueError('The pose for the following images is missing: {}.'.format(missing_image_names))
 

@@ -8,8 +8,8 @@ import os
 dataset_root = '/datasets/speed_debug'
 with open(os.path.join(dataset_root, 'test.json'), 'r') as f:
     test_images = json.load(f)
-with open(os.path.join(dataset_root, 'tron.json'), 'r') as f:
-    tron_images = json.load(f)
+with open(os.path.join(dataset_root, 'real_test.json'), 'r') as f:
+    real_test_images = json.load(f)
 
 submission = SubmissionWriter()
 
@@ -24,7 +24,7 @@ for image in test_images[::-1]:
 
     submission.append_test(filename, q, r)
 
-for tron_image in tron_images:
+for tron_image in real_test_images:
     filename = tron_image['filename']
     q = [.71, .71, 0.0, 0.0]
     r = [9.0, .1, .1]
