@@ -105,5 +105,8 @@ for evaluation in ['test', 'real_test']:
 with open(os.path.join(test_labels_root, 'partial_evaluation_indices.json'), 'w') as f:
     json.dump(partial_evaluation_indices, f)
 
+# copy license
+copyfile('LICENSE.MD', os.path.join(destination_root, 'LICENSE.MD'))
+
 print('Dataset created at {}'.format(destination_root))
 print('Ground truth for test set was saved separately at {}.'.format(test_labels_root))
