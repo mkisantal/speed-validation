@@ -203,7 +203,7 @@ def batch_theta(q):
 
     sinp = 2.0 * (q[:, 0] * q[:, 2] - q[:, 3] * q[:, 1])
     pitch = np.ones(sinp.shape) * pi/2 * np.sign(sinp)
-    pitch[np.abs(sinp)<1] = np.arcsin(sinp[np.abs(sinp)<1])
+    pitch[np.abs(sinp) < 1] = np.arcsin(sinp[np.abs(sinp) < 1])
 
     return np.expand_dims(pitch, 1)
 
@@ -260,6 +260,37 @@ def np_array_with_batch_dim(pose):
     return pose
 
 
+def batch_dcm2euler(dcm):
+
+    """ Convert a batch of Direction Cosine Matrices to batch of Euler angles. """
+
+    phi = np.arctan2(dcm[:, 1, 2], dcm[:, 2, 2])
+    theta = np.arcsin(-dcm[:, 0, 2])
+    psi = np.arctan2(dcm[:, 0, 1], dcm[:, 0, 0])
+    return np.vstack([phi, theta, psi]).transpose([1, 0])
+
+
+def batch_quat2dcm(q):
+
+    """ Convert batch of quaternions to Direction Cosine Matrices. """
+
+    q = normalize_quaternions(q)
+
+    dcm = np.zeros([q.shape[0], 3, 3])
+    dcm[:, 0, 0] = 2 * q[:, 0] * q[:, 0] - 1 + 2 * q[:, 1] * q[:, 1]
+    dcm[:, 1, 1] = 2 * q[:, 0] * q[:, 0] - 1 + 2 * q[:, 2] * q[:, 2]
+    dcm[:, 2, 2] = 2 * q[:, 0] * q[:, 0] - 1 + 2 * q[:, 3] * q[:, 3]
+    dcm[:, 0, 1] = 2 * q[:, 1] * q[:, 2] + 2 * q[:, 0] * q[:, 3]
+    dcm[:, 0, 2] = 2 * q[:, 1] * q[:, 3] - 2 * q[:, 0] * q[:, 2]
+    dcm[:, 1, 0] = 2 * q[:, 1] * q[:, 2] - 2 * q[:, 0] * q[:, 3]
+    dcm[:, 1, 2] = 2 * q[:, 2] * q[:, 3] + 2 * q[:, 0] * q[:, 1]
+    dcm[:, 2, 0] = 2 * q[:, 1] * q[:, 3] + 2 * q[:, 0] * q[:, 2]
+    dcm[:, 2, 1] = 2 * q[:, 2] * q[:, 3] - 2 * q[:, 0] * q[:, 1]
+
+    # clipping to valid values is needed due to numerical errors
+    return np.clip(dcm, -1.0, 1.0)
+
+
 def compute(prediction, label):
 
     """ Calculating evaluation metric for the competition. """
@@ -267,15 +298,20 @@ def compute(prediction, label):
     prediction = np_array_with_batch_dim(prediction)
     label = np_array_with_batch_dim(label)
 
-    pred_q = convert_to_euler(prediction[:, :4])
-    label_q = convert_to_euler(label[:, :4])
+    # orientation error
+    pred_q = prediction[:, :4]
+    label_q = label[:, :4]
+    dcm_est = batch_quat2dcm(pred_q)
+    inv_dcm_gt = np.linalg.inv(batch_quat2dcm(label_q))
 
+    dcm_diff = np.matmul(dcm_est, inv_dcm_gt)
+    euler_error = batch_dcm2euler(dcm_diff)
+
+    euler_error_2_norm = np.linalg.norm(euler_error, axis=1)
+
+    # translation error
     pred_r = prediction[:, 4:]
     label_r = label[:, 4:]
-
-    # angle error norm
-    euler_error = normalized_difference(label_q, pred_q)
-    euler_error_2_norm = np.linalg.norm(euler_error, axis=1)
 
     # distance error norm, normalized with target distance
     target_distances = np.linalg.norm(label_r, axis=1)
