@@ -44,64 +44,6 @@ def test_normalize_quaternion():
     return
 
 
-# def test_batch_quat2dcm():
-#
-#     # test cases cover no rotation, and 90 deg rotation around 3 axes
-#     test_quaternion_1 = [[1, 0, 0, 0]]
-#     dcm_1 = np.expand_dims(np.eye(3), 0)
-#
-#     test_quaternion_2 = [[1, 1, 0, 0]]
-#     dcm_2 = np.expand_dims([[1, 0, 0],
-#                             [0, 0, -1],
-#                             [0, 1, 0]], 0).transpose([0, 2, 1])
-#
-#     test_quaternion_3 = [[1, 0, 1, 0]]
-#     dcm_3 = np.expand_dims([[0, 0, 1],
-#                             [0, 1, 0],
-#                             [-1, 0, 0]], 0).transpose([0, 2, 1])
-#
-#     test_quaternion_4 = [[1, 0, 0, 1]]
-#     dcm_4 = np.expand_dims([[0, -1, 0],
-#                             [1, 0, 0],
-#                             [0, 0, 1]], 0).transpose([0, 2, 1])
-#
-#     assert np.allclose(speed_validation.batch_quat2dcm(test_quaternion_1), dcm_1)
-#     assert np.allclose(speed_validation.batch_quat2dcm(test_quaternion_2), dcm_2)
-#     assert np.allclose(speed_validation.batch_quat2dcm(test_quaternion_3), dcm_3)
-#     assert np.allclose(speed_validation.batch_quat2dcm(test_quaternion_4), dcm_4)
-#
-#     return
-
-
-# def test_batch_dcm2euler():
-#
-#     # test cases cover no rotation, and 90 deg rotation around 3 axes
-#     test_dcm_1 = np.expand_dims(np.eye(3), 0)
-#     euler_1 = np.array([[0, 0, 0]])
-#
-#     test_dcm_2 = np.expand_dims([[1, 0, 0],
-#                                  [0, 0, -1],
-#                                  [0, 1, 0]], 0).transpose([0, 2, 1])
-#     euler_2 = np.array([[pi/2, 0, 0]])
-#
-#     test_dcm_3 = np.expand_dims([[0, 0, 1],
-#                                  [0, 1, 0],
-#                                  [-1, 0, 0]], 0).transpose([0, 2, 1])
-#     euler_3 = np.array([[0, pi/2, 0]])
-#
-#     test_dcm_4 = np.expand_dims([[0, -1, 0],
-#                                  [1, 0, 0],
-#                                  [0, 0, 1]], 0).transpose([0, 2, 1])
-#     euler_4 = np.array([[0, 0, pi/2]])
-#
-#     assert np.allclose(speed_validation.batch_dcm2euler(test_dcm_1), euler_1)
-#     assert np.allclose(speed_validation.batch_dcm2euler(test_dcm_2), euler_2)
-#     assert np.allclose(speed_validation.batch_dcm2euler(test_dcm_3), euler_3)
-#     assert np.allclose(speed_validation.batch_dcm2euler(test_dcm_4), euler_4)
-#
-#     return
-
-
 def is_close(a, b, eps=1e-12):
     return abs(a-b) < eps
 

@@ -6,7 +6,6 @@ except ImportError:
 import json
 import os
 import numpy as np
-from math import pi
 
 # DEBUG
 counter = 0
@@ -189,86 +188,6 @@ def normalize_quaternions(q, eps=1e-12):
         return q / norm
 
 
-def batch_phi(q):
-
-    """ Calculating roll for batch of quaternions. """
-
-    sinr_cosp = np.round(2.0 * (q[:, 0] * q[:, 1] + q[:, 2] * q[:, 3]), 15) + 0.0
-    cosr_cosp = np.round(1.0 - 2.0 * (q[:, 1] * q[:, 1] + q[:, 2] * q[:, 2]), 15) + 0.0  # numerical issues
-    roll = np.arctan2(sinr_cosp, cosr_cosp)
-    return np.expand_dims(roll, 1)
-
-
-def batch_theta(q):
-
-    """ Calculating pitch for batch of quaternions. """
-
-    sinp = 2.0 * (q[:, 0] * q[:, 2] - q[:, 3] * q[:, 1])
-    pitch = np.ones(sinp.shape) * pi/2 * np.sign(sinp)
-    pitch[np.abs(sinp) < 1] = np.arcsin(sinp[np.abs(sinp) < 1])
-
-    return np.expand_dims(pitch, 1)
-
-
-def batch_psi(q):
-
-    """ Calculating yaw for batch of quaternions. """
-
-    siny_cosp = 2.0 * (q[:, 0] * q[:, 3] + q[:, 1] * q[:, 2])
-    cosy_cosp = 1.0 - 2.0 * (q[:, 2] * q[:, 2] + q[:, 3] * q[:, 3])
-    yaw = np.arctan2(siny_cosp, cosy_cosp)
-    return np.expand_dims(yaw, 1)
-
-
-def convert_to_euler(q):
-
-    """ Converting batch of quaternions to euler angles. """
-
-    q = normalize_quaternions(q)
-
-    pitch = batch_phi(q)
-    roll = batch_theta(q)
-    yaw = batch_psi(q)
-
-    return np.hstack([pitch, roll, yaw])
-
-
-# def normalized_difference(angles_a, angles_b, use_radians=True):
-#
-#     """ Calculating angular difference, accounting for periodicity. """
-#
-#     if use_radians:
-#         period = 2 * pi
-#     else:
-#         period = 360
-#
-#     diff = angles_a - angles_b
-#
-#     sign = np.sign(diff)
-#     sign[sign == 0] = 1
-#     diff = diff % (sign * period)
-#     idx = abs(diff) > period / 2
-#     diff[idx] -= sign[idx] * period
-#     return diff
-#
-#
-# def normalized_difference2(diff, use_radians=True):
-#
-#     """ Calculating angular difference, accounting for periodicity. """
-#
-#     if use_radians:
-#         period = 2 * pi
-#     else:
-#         period = 360
-#
-#     sign = np.sign(diff)
-#     sign[sign == 0] = 1
-#     diff = diff % (sign * period)
-#     idx = abs(diff) > period / 2
-#     diff[idx] -= sign[idx] * period
-#     return diff
-
-
 def np_array_with_batch_dim(pose):
 
     """ Converting inputs to ndarrays with batch dimension. """
@@ -277,38 +196,6 @@ def np_array_with_batch_dim(pose):
     if pose.ndim == 1:
         pose = np.expand_dims(pose, 0)
     return pose
-
-
-def batch_quat2dcm(q):
-
-    """ Convert batch of quaternions to Direction Cosine Matrices. """
-
-    q = normalize_quaternions(q)
-
-    dcm = np.zeros([q.shape[0], 3, 3])
-    dcm[:, 0, 0] = 2 * q[:, 0] * q[:, 0] - 1 + 2 * q[:, 1] * q[:, 1]
-    dcm[:, 1, 1] = 2 * q[:, 0] * q[:, 0] - 1 + 2 * q[:, 2] * q[:, 2]
-    dcm[:, 2, 2] = 2 * q[:, 0] * q[:, 0] - 1 + 2 * q[:, 3] * q[:, 3]
-    dcm[:, 0, 1] = 2 * q[:, 1] * q[:, 2] + 2 * q[:, 0] * q[:, 3]
-    dcm[:, 0, 2] = 2 * q[:, 1] * q[:, 3] - 2 * q[:, 0] * q[:, 2]
-    dcm[:, 1, 0] = 2 * q[:, 1] * q[:, 2] - 2 * q[:, 0] * q[:, 3]
-    dcm[:, 1, 2] = 2 * q[:, 2] * q[:, 3] + 2 * q[:, 0] * q[:, 1]
-    dcm[:, 2, 0] = 2 * q[:, 1] * q[:, 3] + 2 * q[:, 0] * q[:, 2]
-    dcm[:, 2, 1] = 2 * q[:, 2] * q[:, 3] - 2 * q[:, 0] * q[:, 1]
-
-    # clipping to valid values is needed due to numerical errors
-    return np.clip(dcm, -1.0, 1.0)
-
-
-# def batch_dcm2quat(dcm):
-#
-#     dcm = dcm.transpose(0, 2, 1)
-#     qr = .5 * np.sqrt(1 + dcm[:, 0, 0] + dcm[:, 1, 1] + dcm[:, 2, 2])
-#     qi = 1/(4*qr) * (dcm[:, 2, 1] - dcm[:, 1, 2])
-#     qj = 1/(4*qr) * (dcm[:, 0, 2] - dcm[:, 2, 0])
-#     qk = 1/(4*qr) * (dcm[:, 1, 0] - dcm[:, 0, 1])
-#
-#     return np.vstack([qr, qi, qj, qk]).transpose([1, 0])
 
 
 def quat_angle(a, b):
@@ -336,19 +223,6 @@ def compute(prediction, label):
     # orientation error
     pred_q = prediction[:, :4]
     label_q = label[:, :4]
-
-    # dcm -> euler
-    # dcm_est = batch_quat2dcm(pred_q)
-    # inv_dcm_gt = np.linalg.inv(batch_quat2dcm(label_q))
-    # dcm_diff = np.clip(np.matmul(dcm_est, inv_dcm_gt), -1.0, 1.0)
-    # euler_error = batch_dcm2euler(dcm_diff)
-
-    # dcm->quat->euler
-    # quat_error = batch_dcm2quat(dcm_diff)
-    # euler_error = convert_to_euler(quat_error)
-
-    # euler_error_2_norm = np.linalg.norm(euler_error, axis=1)
-
     orientation_difference = quat_angle(pred_q, label_q)
 
     # translation error
@@ -363,8 +237,4 @@ def compute(prediction, label):
 
     # final score: adding error norm, calculating mean
     scores = orientation_difference + translation_error_dist_normalized
-
-    # from code import interact
-    # interact(local=locals())
-
     return scores.mean()
